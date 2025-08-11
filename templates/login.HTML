@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <title>เข้าสู่ระบบ</title>
+    <style>
+        /* reset และตั้งค่าเบื้องต้น */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0; /* ลบ padding */
+            font-family: Arial, sans-serif;
+            background-image: url("{{ url_for('static', filename='พื้นหลัง.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* กล่อง container */
+        .container {
+            max-width: 400px;
+            width: 100%;
+            margin: 0; /* ไม่มี margin */
+            padding: 15px; /* padding เพื่อเว้นขอบ */
+            box-sizing: border-box;
+        }
+
+        /* ฟอร์ม */
+        form {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* หัวข้อ */
+        h1 {
+            font-size: 20px;
+            color: #2b6d5c;
+            text-align: center;
+            margin-bottom: 10px;
+            background-color: rgba(255, 255, 255, 0.3);
+            padding: 5px;
+            border-radius: 6px;
+        }
+        h2 {
+            color: #1a6656;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* ตาราง */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            width: 40%;
+        }
+
+        /* อินพุต */
+        input[type="text"],
+        input[type="password"] {
+            width: calc(100% - 12px);
+            padding: 6px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        /* ลิงก์ */
+        a {
+            display: block;
+            margin-top: 10px;
+            color: #007bff;
+            text-decoration: none;
+            text-align: center;
+            font-size: 16px;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* จัดตำแหน่งเซลล์สุดท้ายในตาราง */
+        tr:last-child td,
+        tr:nth-last-child(2) td {
+            text-align: center;
+        }
+
+        /* ปรับแต่งสำหรับมือถือ */
+        @media (max-width: 600px) {
+            .container {
+                max-width: 100%;
+                padding: 10px 15px;
+            }
+            form {
+                padding: 15px;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            input[type="text"],
+            input[type="password"] {
+                font-size: 14px;
+                padding: 8px;
+            }
+            input[type="submit"] {
+                font-size: 14px;
+                padding: 12px;
+            }
+            h1 {
+                font-size: 18px;
+            }
+            h2 {
+                font-size: 16px;
+            }
+            a {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>บันทึกข้อมูลสุขภาพของคุณ</h1>
+        <h2>แบบฟอร์มเข้าสู่ระบบ</h2>
+
+        <form action="/login" method="post">
+            <table border="1" cellpadding="10">
+                <tr>
+                    <td>ชื่อผู้ใช้:</td>
+                    <td><input type="text" name="username" required></td>
+                </tr>
+                <tr>
+                    <td>รหัสผ่าน:</td>
+                    <td><input type="password" name="password" required></td>
+                </tr>
+                <tr>
+                    <td colspan="2" align="center">
+                        <input type="submit" value="เข้าสู่ระบบ">
+                    </td>
+                </tr>
+            </table>
+        </form>
+
+        <p>ยังไม่มีบัญชี? <a href="/register">สมัครสมาชิกที่นี่</a></p>
+
+        <br><hr>
+        <ul>
+            <li>ค่า BMI ใช้ชี้วัดความสมดุลของน้ำหนักและส่วนสูง</li>
+            <li>ค่าเฉลี่ยหญิงไทย: 24.4, ชายไทย: 23.1</li>
+        </ul>
+    </div>
+</body>
+</html>

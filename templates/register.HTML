@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>สมัครสมาชิก</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            display: flex;
+            justify-content: center;  /* จัดกึ่งกลางแนวนอน */
+            align-items: center;      /* จัดกึ่งกลางแนวตั้ง */
+            background-image: url("{{ url_for('static', filename='พื้นหลัง.jpg') }}");
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            font-family: Arial, sans-serif;
+        }
+        form {
+            background-color: rgba(255, 255, 255, 0.9); /* ทำพื้นหลังฟอร์มให้โปร่งแสง */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            width: 350px;
+        }
+        h2 {
+            color: #1a6656;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%; /* ให้ตารางเต็มพื้นที่ฟอร์ม */
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            width: 40%;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"],
+        input[type="password"],
+        input[type="date"],
+        select {
+            width: calc(100% - 12px);
+            padding: 6px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        button[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        a {
+            display: block;
+            margin-top: 10px;
+            color: #007bff;
+            text-decoration: none;
+            text-align: center;
+        }
+        /* จัดข้อความใน cell ให้ตรงกลางเฉพาะ row ปุ่มและลิงก์ */
+        tr:last-child td,
+        tr:nth-last-child(2) td {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <form method="POST">
+        <h2>สมัครสมาชิก</h2>
+        <table>
+            <tr>
+                <th><label for="username">ชื่อผู้ใช้:</label></th>
+                <td><input type="text" id="username" name="username" required></td>
+            </tr>
+            <tr>
+                <th><label for="password">รหัสผ่าน:</label></th>
+                <td><input type="password" id="password" name="password" required></td>
+            </tr>
+            <tr>
+                <th><label for="dob">วันเกิด:</label></th>
+                <td><input type="date" id="dob" name="dob"></td>
+            </tr>
+            <tr>
+                <th><label for="gender">เพศ:</label></th>
+                <td>
+                    <select id="gender" name="gender">
+                        <option value="ชาย">ชาย</option>
+                        <option value="หญิง">หญิง</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <button type="submit">สมัครสมาชิก</button>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <a href="/login">ไปหน้าล็อกอิน</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ตาราง BMI</title>
+    <style>
+      body {
+          font-family: 'Segoe UI', sans-serif;
+          background: #f0f4f8;
+          background-color: #a2e8dc; /* สีเขียวมิ้นต์ */
+
+          margin: 0;
+          padding: 20px;
+      }
+      .container {
+          max-width: 900px;
+          background: #fff;
+          margin: 40px auto;
+          padding: 30px;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+      h2, h3 {
+          text-align: center;
+          color: #333;
+      }
+      /* ให้ตารางเลื่อนซ้ายขวาได้บนมือถือ */
+      .table-responsive {
+          width: 100%;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch; /* ลื่นบนมือถือ */
+      }
+      table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 20px;
+          min-width: 700px; /* ให้ตารางมีความกว้างขั้นต่ำ */
+      }
+      th {
+          background-color: #e9ecef;
+      }
+      table, th, td {
+          border: 1px solid #ccc;
+      }
+      th, td {
+          border: 1px solid #177885;
+          padding: 4px 8px;
+          text-align: center;
+      }
+      form {
+          margin-top: 20px;
+      }
+      label {
+          display: block;
+          margin-bottom: 6px;
+          color: #333;
+      }
+      input[type="number"] {
+          width: 100%;
+          padding: 8px;
+          margin-bottom: 15px;
+          border-radius: 5px;
+          border: 1px solid #ccc;
+      }
+      button {
+          background-color: #28a745;
+          color: white;
+          padding: 10px 16px;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 16px;
+      }
+      button:hover {
+          background-color: #218838;
+      }
+      #result {
+          margin-top: 15px;
+          color: #007bff;
+          font-weight: bold;
+          text-align: center;
+      }
+      .section {
+          margin-top: 40px;
+          padding-top: 20px;
+          border-top: 1px solid #ccc;
+      }
+      .logout {
+          display: block;
+          text-align: center;
+          margin-top: 40px;
+      }
+      .logout button {
+          background-color: #dc3545;
+      }
+      .logout button:hover {
+          background-color: #c82333;
+      }
+      .pagination {
+          margin-top: 20px;
+          text-align: center;
+      }
+      .pagination a {
+          margin: 0 5px;
+          padding: 6px 12px;
+          border: 1px solid #177885;
+          border-radius: 5px;
+          text-decoration: none;
+          color: #177885;
+          font-weight: bold;
+      }
+      .pagination a.active {
+          background-color: #177885;
+          color: white;
+      }
+
+      /* ปรับ container ให้เต็มจอมือถือ */
+      @media (max-width: 600px) {
+        .container {
+          max-width: 100%;
+          margin: 10px;
+          padding: 15px;
+          border-radius: 0;
+          box-shadow: none;
+        }
+      }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>สวัสดี : {{ username }}</h2>
+    <h4>นี่คือข้อมูล BMI ของคุณ</h4>
+
+    <div class="table-responsive">
+      <table>
+          <thead>
+              <tr>
+                  <th>เวลา</th>
+                  <th>ส่วนสูง (ซม.)</th>
+                  <th>น้ำหนัก (กก.)</th>
+                  <th>BMI</th>
+                  <th>การแปลผล</th>
+                  <th>ความหมาย</th>
+                  <th>น้ำหนักตัวที่เหมาะสม (กก.)</th>
+              </tr>
+          </thead>
+          <tbody id="bmi-table-body">
+              {% for row in bmi_data %}
+              <tr>
+                  <td>{{ row['timestamp'] }}</td>
+                  <td>{{ row['height'] }}</td>
+                  <td>{{ row['weight'] }}</td>
+                  <td>{{ row['bmi'] }}</td>
+                  <td>
+                      {% set bmi = row['bmi']|float %}
+                      {% if bmi < 18.5 %}
+                          น้ำหนักน้อย / ผอม
+                      {% elif bmi < 23 %}
+                          สมส่วน (สุขภาพดี)
+                      {% elif bmi < 25 %}
+                          ท้วม / เริ่มอ้วนระดับ 1
+                      {% elif bmi < 30 %}
+                          อ้วนแล้ว / อ้วนระดับ 2
+                      {% else %}
+                          อ้วนมาก / โรคอ้วนระดับ 3
+                      {% endif %}
+                  </td>
+                  <td>
+                      {% if bmi < 18.5 %}
+                          อาจเสี่ยงต่อการได้รับสารอาหารไม่เพียงพอหรือได้รับพลังงานไม่เพียงพอ 
+                      {% elif bmi < 23 %}
+                          อยู่ในเกณฑ์ปกติ ห่างไกลโรคที่เกิดจากความอ้วน และมีความเสี่ยงต่อการเกิดโรคต่าง ๆ น้อยที่สุด
+                      {% elif bmi < 25 %}
+                          มีความเสี่ยงต่อการเกิดโรคที่มากับความอ้วน ควรปรับพฤติกรรมการทานอาหาร ออกกำลังกาย และตรวจสุขภาพ
+                      {% elif bmi < 30 %}
+                          เสี่ยงต่อการเกิดโรคร้ายแรง เช่น ความดัน เบาหวาน
+                      {% else %}
+                          หากเลข BMI ยิ่งสูงกว่า 40.0 ยิ่งแสดงถึงความอ้วนที่มากขึ้น ควรไปตรวจสุขภาพ และปรึกษาแพทย์
+                      {% endif %}
+                  </td>
+                  <td>
+                      {% set height_m = row['height']|float / 100 %}
+                      {{ (height_m * height_m * 22)|round(1) }}
+                  </td>
+              </tr>
+              {% endfor %}
+          </tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      {% for p in range(1, total_pages + 1) %}
+        <a href="{{ url_for('bmi_table') }}?page={{ p }}" class="{{ 'active' if p == page else '' }}">{{ p }}</a>
+      {% endfor %}
+    </div>
+
+    <div class="section">
+        <h3>เพิ่มหรือแก้ไขข้อมูล BMI</h3>
+        <form action="/add_bmi" method="post">
+            <label>ส่วนสูง (ซม.):</label>
+            <input type="number" name="height" step="0.1" required>
+
+            <label>น้ำหนัก (กก.):</label>
+            <input type="number" name="weight" step="0.1" required>
+
+            <button type="submit">บันทึกข้อมูล BMI</button>
+        </form>
+    </div>
+
+    <div id="result"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <div style="max-width: 900px; margin: auto; margin-top: 40px;">
+        <h3>กราฟ BMI รายวัน</h3>
+        <canvas id="bmiChart"></canvas>
+    </div>
+
+    <div style="max-width: 900px; margin: auto; margin-top: 40px;">
+        <h3>กราฟ น้ำหนัก (กก.) รายวัน</h3>
+        <canvas id="weightChart"></canvas>
+    </div>
+
+    <script>
+        const ctxBMI = document.getElementById('bmiChart').getContext('2d');
+        const bmiChart = new Chart(ctxBMI, {
+            type: 'line',
+            data: {
+                labels: {{ graph_labels|tojson }},
+                datasets: [{
+                    label: 'BMI รายวัน',
+                    data: {{ graph_bmi|tojson }},
+                    borderColor: 'rgba(23, 120, 133, 1)',
+                    backgroundColor: 'rgba(23, 120,133,0.2)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { title: { display: true, text: 'วันที่' } },
+                    y: {
+                        title: { display: true, text: 'ค่า BMI' },
+                        suggestedMin: 10,
+                        suggestedMax: 40
+                    }
+                },
+                plugins: {
+                    legend: { display: true, position: 'top' },
+                    tooltip: { enabled: true }
+                }
+            }
+        });
+
+        const ctxWeight = document.getElementById('weightChart').getContext('2d');
+        const weightChart = new Chart(ctxWeight, {
+            type: 'line',
+            data: {
+                labels: {{ graph_labels|tojson }},
+                datasets: [{
+                    label: 'น้ำหนัก (กก.) รายวัน',
+                    data: {{ graph_weight|tojson }},
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { title: { display: true, text: 'วันที่' } },
+                    y: {
+                        title: { display: true, text: 'น้ำหนัก (กก.)' },
+                        suggestedMin: 30,
+                        suggestedMax: 150
+                    }
+                },
+                plugins: {
+                    legend: { display: true, position: 'top' },
+                    tooltip: { enabled: true }
+                }
+            }
+        });
+    </script>
+    <div class="logout">
+        <form action="/logout" method="post">
+            <button type="submit">ออกจากระบบ</button>
+        </form>
+    </div>
+
+</div>
+
+</body>
+</html>
