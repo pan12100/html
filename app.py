@@ -6,6 +6,7 @@ from collections import Counter
 import gspread
 import hashlib
 import os
+import json
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "your_default_secret_key")
@@ -16,16 +17,22 @@ current_username = ""
 # Google Sheets setup
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
-creds = ServiceAccountCredentials.from_json_keyfile_name("D:/html/credentials.json", scope)
+# โหลด credentials จาก Environment Variable แทนไฟล์ local
+creds_json = os.getenv("GOOGLE_CREDS")
+if not creds_json:
+    raise Exception("Missing GOOGLE_CREDS environment variable")
 
+creds_dict = json.loads(creds_json)
+creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 
 client = gspread.authorize(creds)
-
 sheet_users = client.open("BMI_system").worksheet("users")
 sheet_bmi = client.open("BMI_system").worksheet("bmi_data")
 
+
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
+
 
 def most_common_value(lst):
     if not lst:
@@ -33,11 +40,13 @@ def most_common_value(lst):
     counter = Counter(lst)
     return counter.most_common(1)[0][0] or 0
 
+
 @app.route("/")
 def home():
     if "username" in session:
         return redirect("/bmi_table")
     return redirect("/login")
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -59,6 +68,7 @@ def register():
         return redirect("/login")
     return render_template("register.html")
 
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     global current_username
@@ -79,12 +89,14 @@ def login():
         return "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
     return render_template("login.html")
 
+
 @app.route("/logout", methods=["GET", "POST"])
 def logout():
     global current_username
     session.clear()
     current_username = ""
     return redirect("/login")
+
 
 @app.route("/bmi_table")
 def bmi_table():
@@ -159,6 +171,7 @@ def bmi_table():
         graph_weight=graph_weight
     )
 
+
 @app.route("/add_bmi", methods=["POST"])
 def add_bmi():
     if "username" not in session:
@@ -182,6 +195,7 @@ def add_bmi():
         return f"เกิดข้อผิดพลาด: {e}"
 
     return redirect("/bmi_table")
+
 
 @app.route("/api/bmi", methods=["POST"])
 def api_bmi():
@@ -218,9 +232,12 @@ def api_bmi():
 
     return jsonify({"status": "success", "bmi": round(bmi, 2)})
 
+
 @app.route("/api/get_username", methods=["GET"])
 def get_username():
     return current_username if current_username else ""
 
+
 if __name__ == "__main__":
+    # สำหรับ Render ให้ใช้ gunicorn ผ่าน Procfile
     app.run(host="0.0.0.0", port=5000, debug=False)
