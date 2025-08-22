@@ -1,12 +1,12 @@
-from flask import Flask, request, render_template, redirect, session, jsonify
-from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
-from dateutil import parser
-from collections import Counter
-import gspread
-import hashlib
 import os
 import json
+import hashlib
+from collections import Counter
+from datetime import datetime
+from dateutil import parser
+from flask import Flask, request, render_template, redirect, session, jsonify
+from google.oauth2.service_account import Credentials
+import gspread
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "your_default_secret_key")
@@ -15,24 +15,38 @@ app.secret_key = os.environ.get("SECRET_KEY", "your_default_secret_key")
 current_username = ""
 
 # Google Sheets setup
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 
-# โหลด credentials จาก Environment Variable แทนไฟล์ local
+# โหลด credentials จาก Environment Variable (JSON string)
 creds_json = os.getenv("GOOGLE_CREDS")
 if not creds_json:
-    raise Exception("Missing GOOGLE_CREDS environment variable")
+    print("⚠️ Warning: GOOGLE_CREDS environment variable is missing!")
+    creds = None
+else:
+    try:
+        creds_dict = json.loads(creds_json)
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+    except Exception as e:
+        print(f"⚠️ Failed to load credentials: {e}")
+        creds = None
 
-creds_dict = json.loads(creds_json)
-creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+# เปิด Google Sheets
+if creds:
+    try:
+        client = gspread.authorize(creds)
+        sheet_users = client.open("BMI_system").worksheet("users")
+        sheet_bmi = client.open("BMI_system").worksheet("bmi_data")
+    except Exception as e:
+        print(f"⚠️ Failed to access Google Sheets: {e}")
+        sheet_users = None
+        sheet_bmi = None
+else:
+    sheet_users = None
+    sheet_bmi = None
 
-client = gspread.authorize(creds)
-sheet_users = client.open("BMI_system").worksheet("users")
-sheet_bmi = client.open("BMI_system").worksheet("bmi_data")
-
-
+# ฟังก์ชันช่วย
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
-
 
 def most_common_value(lst):
     if not lst:
@@ -40,16 +54,18 @@ def most_common_value(lst):
     counter = Counter(lst)
     return counter.most_common(1)[0][0] or 0
 
-
+# Routes
 @app.route("/")
 def home():
     if "username" in session:
         return redirect("/bmi_table")
     return redirect("/login")
 
-
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    if not sheet_users:
+        return "❌ ระบบยังไม่พร้อมใช้งาน (Google Sheets ไม่สามารถเข้าถึงได้)"
+
     if request.method == "POST":
         username = request.form["username"].strip().lower()
         password = request.form["password"]
@@ -68,10 +84,12 @@ def register():
         return redirect("/login")
     return render_template("register.html")
 
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
     global current_username
+    if not sheet_users:
+        return "❌ ระบบยังไม่พร้อมใช้งาน (Google Sheets ไม่สามารถเข้าถึงได้)"
+
     if request.method == "POST":
         username = request.form["username"].strip().lower()
         password = request.form["password"]
@@ -89,7 +107,6 @@ def login():
         return "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
     return render_template("login.html")
 
-
 @app.route("/logout", methods=["GET", "POST"])
 def logout():
     global current_username
@@ -97,11 +114,13 @@ def logout():
     current_username = ""
     return redirect("/login")
 
-
 @app.route("/bmi_table")
 def bmi_table():
     if "username" not in session:
         return redirect("/login")
+
+    if not sheet_bmi:
+        return "❌ ระบบยังไม่พร้อมใช้งาน (Google Sheets ไม่สามารถเข้าถึงได้)"
 
     username = session["username"]
     try:
@@ -127,17 +146,14 @@ def bmi_table():
             except:
                 continue
 
-    # เรียงข้อมูลล่าสุดก่อน
     cleaned_data = sorted(
         cleaned_data,
         key=lambda r: parser.parse(r["timestamp"]) if r["timestamp"] else datetime.min,
         reverse=True
     )
 
-    # สร้าง dict เก็บข้อมูลรายวัน (mode)
     daily_bmi = {}
     daily_weight = {}
-
     for item in cleaned_data:
         try:
             date_key = parser.parse(item["timestamp"]).date()
@@ -151,7 +167,6 @@ def bmi_table():
     graph_bmi = [round(most_common_value(daily_bmi[d]), 2) for d in graph_labels]
     graph_weight = [round(most_common_value(daily_weight[d]), 2) for d in graph_labels]
 
-    # แบ่งหน้า
     per_page = 20
     page = int(request.args.get("page", 1))
     total_pages = (len(cleaned_data) + per_page - 1) // per_page
@@ -171,11 +186,13 @@ def bmi_table():
         graph_weight=graph_weight
     )
 
-
 @app.route("/add_bmi", methods=["POST"])
 def add_bmi():
     if "username" not in session:
         return redirect("/login")
+
+    if not sheet_bmi:
+        return "❌ ระบบยังไม่พร้อมใช้งาน (Google Sheets ไม่สามารถเข้าถึงได้)"
 
     username = session["username"]
     height = request.form.get("height")
@@ -196,9 +213,11 @@ def add_bmi():
 
     return redirect("/bmi_table")
 
-
 @app.route("/api/bmi", methods=["POST"])
 def api_bmi():
+    if not sheet_users or not sheet_bmi:
+        return jsonify({"status": "error", "message": "ระบบยังไม่พร้อมใช้งาน"}), 500
+
     data = request.json
     if not data:
         return jsonify({"status": "error", "message": "ไม่มีข้อมูล"}), 400
@@ -232,12 +251,9 @@ def api_bmi():
 
     return jsonify({"status": "success", "bmi": round(bmi, 2)})
 
-
 @app.route("/api/get_username", methods=["GET"])
 def get_username():
     return current_username if current_username else ""
 
-
 if __name__ == "__main__":
-    # สำหรับ Render ให้ใช้ gunicorn ผ่าน Procfile
     app.run(host="0.0.0.0", port=5000, debug=False)
