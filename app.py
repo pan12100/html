@@ -8,6 +8,7 @@ from dateutil import parser
 from flask import Flask, request, render_template, redirect, session, jsonify
 from google.oauth2.service_account import Credentials
 import gspread
+import traceback
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "your_default_secret_key")
@@ -30,9 +31,12 @@ else:
         creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     except Exception as e:
         print(f"⚠️ Failed to load credentials: {e}")
+        traceback.print_exc()
         creds = None
 
 # เปิด Google Sheets
+sheet_users = None
+sheet_bmi = None
 if creds:
     try:
         client = gspread.authorize(creds)
@@ -40,11 +44,7 @@ if creds:
         sheet_bmi = client.open("BMI_system").worksheet("bmi_data")
     except Exception as e:
         print(f"⚠️ Failed to access Google Sheets: {e}")
-        sheet_users = None
-        sheet_bmi = None
-else:
-    sheet_users = None
-    sheet_bmi = None
+        traceback.print_exc()
 
 # ฟังก์ชันช่วย
 def hash_password(password):
@@ -66,7 +66,7 @@ def home():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if not sheet_users:
-        return "❌ ระบบยังไม่พร้อมใช้งาน (Google Sheets ไม่สามารถเข้าถึงได้)"
+        return f"❌ ระบบยังไม่พร้อมใช้งาน (Google Sheets ไม่สามารถเข้าถึงได้)<br><pre>{traceback.format_exc()}</pre>"
 
     if request.method == "POST":
         username = request.form["username"].strip().lower()
@@ -81,7 +81,7 @@ def register():
                 return "ชื่อผู้ใช้นี้มีอยู่แล้ว กรุณาเปลี่ยนชื่อผู้ใช้"
             sheet_users.append_row([username, hashed_pw, dob, gender])
         except Exception as e:
-            return f"เกิดข้อผิดพลาด: {e}"
+            return f"เกิดข้อผิดพลาด: {e}<br><pre>{traceback.format_exc()}</pre>"
 
         return redirect("/login")
     return render_template("register.html")
@@ -90,7 +90,7 @@ def register():
 def login():
     global current_username
     if not sheet_users:
-        return "❌ ระบบยังไม่พร้อมใช้งาน (Google Sheets ไม่สามารถเข้าถึงได้)"
+        return f"❌ ระบบยังไม่พร้อมใช้งาน (Google Sheets ไม่สามารถเข้าถึงได้)<br><pre>{traceback.format_exc()}</pre>"
 
     if request.method == "POST":
         username = request.form["username"].strip().lower()
@@ -104,7 +104,7 @@ def login():
                     current_username = username
                     return redirect("/bmi_table")
         except Exception as e:
-            return f"เกิดข้อผิดพลาด: {e}"
+            return f"เกิดข้อผิดพลาด: {e}<br><pre>{traceback.format_exc()}</pre>"
 
         return "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
     return render_template("login.html")
@@ -122,13 +122,13 @@ def bmi_table():
         return redirect("/login")
 
     if not sheet_bmi:
-        return "❌ ระบบยังไม่พร้อมใช้งาน (Google Sheets ไม่สามารถเข้าถึงได้)"
+        return f"❌ ระบบยังไม่พร้อมใช้งาน (Google Sheets ไม่สามารถเข้าถึงได้)<br><pre>{traceback.format_exc()}</pre>"
 
     username = session["username"]
     try:
         bmi_data = sheet_bmi.get_all_records()
     except Exception as e:
-        return f"เกิดข้อผิดพลาด: {e}"
+        return f"เกิดข้อผิดพลาด: {e}<br><pre>{traceback.format_exc()}</pre>"
 
     cleaned_data = []
     for row in bmi_data:
@@ -194,7 +194,7 @@ def add_bmi():
         return redirect("/login")
 
     if not sheet_bmi:
-        return "❌ ระบบยังไม่พร้อมใช้งาน (Google Sheets ไม่สามารถเข้าถึงได้)"
+        return f"❌ ระบบยังไม่พร้อมใช้งาน (Google Sheets ไม่สามารถเข้าถึงได้)<br><pre>{traceback.format_exc()}</pre>"
 
     username = session["username"]
     height = request.form.get("height")
@@ -211,7 +211,7 @@ def add_bmi():
     try:
         sheet_bmi.append_row([username, height, weight, round(bmi, 2), timestamp])
     except Exception as e:
-        return f"เกิดข้อผิดพลาด: {e}"
+        return f"เกิดข้อผิดพลาด: {e}<br><pre>{traceback.format_exc()}</pre>"
 
     return redirect("/bmi_table")
 
@@ -243,13 +243,13 @@ def api_bmi():
         if not any(u.get("username") == username for u in users):
             return jsonify({"status": "error", "message": "ไม่พบผู้ใช้"}), 404
     except Exception as e:
-        return jsonify({"status": "error", "message": f"เกิดข้อผิดพลาด: {e}"}), 500
+        return jsonify({"status": "error", "message": f"เกิดข้อผิดพลาด: {e}\n{traceback.format_exc()}"}), 500
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
         sheet_bmi.append_row([username, height, weight, round(bmi, 2), timestamp])
     except Exception as e:
-        return jsonify({"status": "error", "message": f"เกิดข้อผิดพลาด: {e}"}), 500
+        return jsonify({"status": "error", "message": f"เกิดข้อผิดพลาด: {e}\n{traceback.format_exc()}"}), 500
 
     return jsonify({"status": "success", "bmi": round(bmi, 2)})
 
