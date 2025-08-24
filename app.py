@@ -106,7 +106,7 @@ def login():
         return "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
     return render_template("login.html")
 
-@app.route("/logout")
+@app.route("/logout", methods=["GET", "POST"])
 def logout():
     global current_username
     session.clear()
