@@ -1,5 +1,6 @@
 import os
 import json
+import base64
 import hashlib
 from collections import Counter
 from datetime import datetime
@@ -17,15 +18,14 @@ current_username = ""
 # Google Sheets setup
 scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 
-# โหลด credentials จาก Environment Variable (JSON string)
-creds_json = os.getenv("GOOGLE_CREDS")
-if not creds_json:
-    print("⚠️ Warning: GOOGLE_CREDS environment variable is missing!")
+# โหลด credentials จาก Environment Variable (base64)
+creds_b64 = os.getenv("GOOGLE_CREDS_B64")
+if not creds_b64:
+    print("⚠️ Warning: GOOGLE_CREDS_B64 environment variable is missing!")
     creds = None
 else:
     try:
-        # ✅ แก้กรณี private_key มี \n ใน env
-        creds_json = creds_json.replace("\\n", "\n")
+        creds_json = base64.b64decode(creds_b64).decode()
         creds_dict = json.loads(creds_json)
         creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     except Exception as e:
@@ -257,7 +257,7 @@ def api_bmi():
 def get_username():
     return current_username if current_username else ""
 
-# ✅ แก้ให้ใช้ PORT จาก Render
+# ใช้ PORT จาก Render
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
