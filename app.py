@@ -24,6 +24,8 @@ if not creds_json:
     creds = None
 else:
     try:
+        # ✅ แก้กรณี private_key มี \n ใน env
+        creds_json = creds_json.replace("\\n", "\n")
         creds_dict = json.loads(creds_json)
         creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     except Exception as e:
@@ -255,5 +257,7 @@ def api_bmi():
 def get_username():
     return current_username if current_username else ""
 
+# ✅ แก้ให้ใช้ PORT จาก Render
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
